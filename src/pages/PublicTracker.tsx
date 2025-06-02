@@ -20,6 +20,15 @@ import {
   QrCode
 } from 'lucide-react';
 
+interface TimelineStep {
+  key: string;
+  label: string;
+  icon: React.ComponentType<any>;
+  description: string;
+  completed: boolean;
+  current: boolean;
+}
+
 const PublicTracker = () => {
   const { shipmentId: urlShipmentId } = useParams<{ shipmentId: string }>();
   const [shipmentId, setShipmentId] = useState(urlShipmentId || '');
@@ -91,8 +100,8 @@ const PublicTracker = () => {
     });
   };
 
-  const getTimelineSteps = () => {
-    const steps = [
+  const getTimelineSteps = (): TimelineStep[] => {
+    const baseSteps = [
       { key: 'CREATED', label: 'Farm', icon: Leaf, description: 'Harvested and recorded' },
       { key: 'CERTIFIED', label: 'Certified', icon: ShieldCheck, description: 'Quality certified' },
       { key: 'PROCESSED', label: 'Processed', icon: CheckCircle, description: 'Processed and packaged' },
@@ -100,11 +109,17 @@ const PublicTracker = () => {
       { key: 'DELIVERED', label: 'Store', icon: Building, description: 'Available in store' },
     ];
 
-    if (!shipment) return steps;
+    if (!shipment) {
+      return baseSteps.map(step => ({
+        ...step,
+        completed: false,
+        current: false
+      }));
+    }
 
-    const currentStatusIndex = steps.findIndex(step => step.key === shipment.status);
+    const currentStatusIndex = baseSteps.findIndex(step => step.key === shipment.status);
     
-    return steps.map((step, index) => ({
+    return baseSteps.map((step, index) => ({
       ...step,
       completed: index <= currentStatusIndex,
       current: step.key === shipment.status
