@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +16,9 @@ import {
   AlertTriangle,
   CheckCircle,
   Leaf,
-  QrCode
+  QrCode,
+  Home,
+  ArrowLeft
 } from 'lucide-react';
 
 interface TimelineStep {
@@ -31,6 +32,7 @@ interface TimelineStep {
 
 const PublicTracker = () => {
   const { shipmentId: urlShipmentId } = useParams<{ shipmentId: string }>();
+  const navigate = useNavigate();
   const [shipmentId, setShipmentId] = useState(urlShipmentId || '');
   const [shipment, setShipment] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -131,15 +133,29 @@ const PublicTracker = () => {
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-emerald-200">
         <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="h-10 w-10 bg-gradient-to-r from-emerald-500 to-green-600 rounded-xl flex items-center justify-center">
-              <QrCode className="h-6 w-6 text-white" />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="h-10 w-10 bg-gradient-to-r from-emerald-500 to-green-600 rounded-xl flex items-center justify-center">
+                <QrCode className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                  Food Supply Chain Tracker
+                </h1>
+                <p className="text-gray-600">Track your food's journey from farm to table</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
-                Food Supply Chain Tracker
-              </h1>
-              <p className="text-gray-600">Track your food's journey from farm to table</p>
+            
+            {/* Navigation buttons */}
+            <div className="flex space-x-2">
+              <Button variant="outline" onClick={() => navigate('/')}>
+                <Home className="h-4 w-4 mr-2" />
+                Home
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/dashboard')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Dashboard
+              </Button>
             </div>
           </div>
           

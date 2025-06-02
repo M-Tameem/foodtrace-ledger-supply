@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -22,6 +21,10 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react';
+import ProcessShipmentForm from '@/components/ProcessShipmentForm';
+import DistributeShipmentForm from '@/components/DistributeShipmentForm';
+import ReceiveShipmentForm from '@/components/ReceiveShipmentForm';
+import RecordCertificationForm from '@/components/RecordCertificationForm';
 
 const ShipmentDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,16 +34,33 @@ const ShipmentDetails = () => {
   const [shipment, setShipment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showProcessForm, setShowProcessForm] = useState(false);
+  const [showDistributeForm, setShowDistributeForm] = useState(false);
+  const [showReceiveForm, setShowReceiveForm] = useState(false);
+  const [showCertificationForm, setShowCertificationForm] = useState(false);
 
   useEffect(() => {
-    if (id) {
+    if (id && id !== 'undefined') {
       loadShipmentDetails();
+    } else {
+      setLoading(false);
+      toast({
+        title: "Invalid shipment ID",
+        description: "Please provide a valid shipment ID",
+        variant: "destructive",
+      });
     }
   }, [id]);
 
   const loadShipmentDetails = async () => {
+    if (!id || id === 'undefined') {
+      setLoading(false);
+      return;
+    }
+    
     try {
-      const data = await apiClient.getShipmentDetails(id!);
+      console.log('Getting shipment details for ID:', id);
+      const data = await apiClient.getShipmentDetails(id);
       setShipment(data);
     } catch (error) {
       toast({
@@ -132,6 +152,29 @@ const ShipmentDetails = () => {
            shipment?.currentOwnerAlias === user?.chaincode_alias;
   };
 
+  const canProcess = () => {
+    return user?.role === 'processor' && 
+           shipment?.status === 'CERTIFIED' && 
+           shipment?.currentOwnerAlias === user?.chaincode_alias;
+  };
+
+  const canDistribute = () => {
+    return user?.role === 'distributor' && 
+           shipment?.status === 'PROCESSED' && 
+           shipment?.currentOwnerAlias === user?.chaincode_alias;
+  };
+
+  const canReceive = () => {
+    return user?.role === 'retailer' && 
+           shipment?.status === 'DISTRIBUTED' && 
+           shipment?.currentOwnerAlias === user?.chaincode_alias;
+  };
+
+  const canCertify = () => {
+    return user?.role === 'certifier' && 
+           shipment?.status === 'PENDING_CERTIFICATION';
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -142,13 +185,13 @@ const ShipmentDetails = () => {
     );
   }
 
-  if (!shipment) {
+  if (!id || id === 'undefined' || !shipment) {
     return (
       <Layout>
         <div className="text-center py-12">
           <Package className="h-16 w-16 mx-auto text-gray-300 mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Shipment not found</h2>
-          <p className="text-gray-600 mb-4">The shipment you're looking for doesn't exist.</p>
+          <p className="text-gray-600 mb-4">The shipment you're looking for doesn't exist or the ID is invalid.</p>
           <Button onClick={() => navigate('/dashboard')}>
             Back to Dashboard
           </Button>
@@ -178,6 +221,8 @@ const ShipmentDetails = () => {
               {getStatusIcon(shipment.status)}
               <span>{shipment.status.replace('_', ' ')}</span>
             </Badge>
+            
+            {/* Action buttons based on user role and shipment status */}
             {canSubmitForCertification() && (
               <Button
                 onClick={handleSubmitForCertification}
@@ -187,8 +232,89 @@ const ShipmentDetails = () => {
                 {actionLoading ? 'Submitting...' : 'Submit for Certification'}
               </Button>
             )}
+            
+            {canProcess() && (
+              <Button
+                onClick={() => setShowProcessForm(true)}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Process Shipment
+              </Button>
+            )}
+            
+            {canDistribute() && (
+              <Button
+                onClick={() => setShowDistributeForm(true)}
+                className="bg-yellow-600 hover:bg-yellow-700"
+              >
+                Distribute Shipment
+              </Button>
+            )}
+            
+            {canReceive() && (
+              <Button
+                onClick={() => setShowReceiveForm(true)}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                Receive Shipment
+              </Button>
+            )}
+            
+            {canCertify() && (
+              <Button
+                onClick={() => setShowCertificationForm(true)}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Record Certification
+              </Button>
+            )}
           </div>
         </div>
+
+        {/* Forms */}
+        {showProcessForm && (
+          <ProcessShipmentForm
+            shipmentId={shipment.shipmentID}
+            onSuccess={() => {
+              setShowProcessForm(false);
+              loadShipmentDetails();
+            }}
+            onCancel={() => setShowProcessForm(false)}
+          />
+        )}
+        
+        {showDistributeForm && (
+          <DistributeShipmentForm
+            shipmentId={shipment.shipmentID}
+            onSuccess={() => {
+              setShowDistributeForm(false);
+              loadShipmentDetails();
+            }}
+            onCancel={() => setShowDistributeForm(false)}
+          />
+        )}
+        
+        {showReceiveForm && (
+          <ReceiveShipmentForm
+            shipmentId={shipment.shipmentID}
+            onSuccess={() => {
+              setShowReceiveForm(false);
+              loadShipmentDetails();
+            }}
+            onCancel={() => setShowReceiveForm(false)}
+          />
+        )}
+        
+        {showCertificationForm && (
+          <RecordCertificationForm
+            shipmentId={shipment.shipmentID}
+            onSuccess={() => {
+              setShowCertificationForm(false);
+              loadShipmentDetails();
+            }}
+            onCancel={() => setShowCertificationForm(false)}
+          />
+        )}
 
         {/* Timeline */}
         <Card>
