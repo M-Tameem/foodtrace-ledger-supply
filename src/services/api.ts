@@ -1,3 +1,4 @@
+
 import { useAuth } from '@/contexts/AuthContext';
 
 // Update this to point to your local backend server
@@ -57,7 +58,11 @@ class ApiClient {
   }
 
   async getShipmentDetails(id: string) {
-    return this.request<any>(`/api/shipments/${id}`);
+    console.log('Getting shipment details for ID:', id);
+    if (!id || id === 'undefined') {
+      throw new Error('Invalid shipment ID');
+    }
+    return this.request<any>(`/api/shipments/${encodeURIComponent(id)}`);
   }
 
   async createShipment(data: any) {
@@ -68,34 +73,34 @@ class ApiClient {
   }
 
   async submitForCertification(shipmentId: string) {
-    return this.request<any>(`/api/shipments/${shipmentId}/certification/submit`, {
+    return this.request<any>(`/api/shipments/${encodeURIComponent(shipmentId)}/certification/submit`, {
       method: 'POST',
     });
   }
 
   async recordCertification(shipmentId: string, data: any) {
-    return this.request<any>(`/api/shipments/${shipmentId}/certification/record`, {
+    return this.request<any>(`/api/shipments/${encodeURIComponent(shipmentId)}/certification/record`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async processShipment(shipmentId: string, processorData: any) {
-    return this.request<any>(`/api/shipments/${shipmentId}/process`, {
+    return this.request<any>(`/api/shipments/${encodeURIComponent(shipmentId)}/process`, {
       method: 'POST',
       body: JSON.stringify({ processorData }),
     });
   }
 
   async distributeShipment(shipmentId: string, distributorData: any) {
-    return this.request<any>(`/api/shipments/${shipmentId}/distribute`, {
+    return this.request<any>(`/api/shipments/${encodeURIComponent(shipmentId)}/distribute`, {
       method: 'POST',
       body: JSON.stringify({ distributorData }),
     });
   }
 
   async receiveShipment(shipmentId: string, retailerData: any) {
-    return this.request<any>(`/api/shipments/${shipmentId}/receive`, {
+    return this.request<any>(`/api/shipments/${encodeURIComponent(shipmentId)}/receive`, {
       method: 'POST',
       body: JSON.stringify({ retailerData }),
     });
@@ -114,14 +119,14 @@ class ApiClient {
   }
 
   async assignRole(alias: string, role: string) {
-    return this.request<any>(`/api/identities/${alias}/roles`, {
+    return this.request<any>(`/api/identities/${encodeURIComponent(alias)}/roles`, {
       method: 'POST',
       body: JSON.stringify({ role }),
     });
   }
 
   async makeAdmin(alias: string) {
-    return this.request<any>(`/api/identities/${alias}/admin`, {
+    return this.request<any>(`/api/identities/${encodeURIComponent(alias)}/admin`, {
       method: 'POST',
     });
   }

@@ -40,6 +40,7 @@ const AdminPanel = () => {
   const loadIdentities = async () => {
     try {
       const data = await apiClient.getAllIdentities();
+      console.log('Identities response:', data);
       setIdentities(data || []);
     } catch (error) {
       toast({
@@ -112,6 +113,17 @@ const AdminPanel = () => {
     }
   };
 
+  // Function to get the display name for an identity
+  const getIdentityDisplayName = (identity: any) => {
+    // Try different possible field names from the chaincode response
+    return identity.alias || identity.shortName || identity.enrollmentID || identity.fullId || 'Unknown';
+  };
+
+  // Function to get the identity ID
+  const getIdentityId = (identity: any) => {
+    return identity.enrollmentID || identity.alias || identity.shortName || identity.fullId;
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -167,47 +179,57 @@ const AdminPanel = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {identities.map((identity) => (
-                      <div
-                        key={identity.enrollmentID || identity.alias}
-                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
-                      >
-                        <div className="flex items-center space-x-4">
-                          <div>
-                            <h3 className="font-medium text-gray-900">
-                              {identity.alias || identity.enrollmentID}
-                            </h3>
-                            <p className="text-sm text-gray-500">
-                              {identity.enrollmentID}
-                            </p>
+                    {identities.map((identity, index) => {
+                      const displayName = getIdentityDisplayName(identity);
+                      const identityId = getIdentityId(identity);
+                      
+                      return (
+                        <div
+                          key={identityId || index}
+                          className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+                        >
+                          <div className="flex items-center space-x-4">
+                            <div>
+                              <h3 className="font-medium text-gray-900">
+                                {displayName}
+                              </h3>
+                              <p className="text-sm text-gray-500">
+                                ID: {identityId}
+                              </p>
+                              {identity.fullId && (
+                                <p className="text-xs text-gray-400 max-w-md truncate">
+                                  Full ID: {identity.fullId}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {identity.roles && identity.roles.map((role: string) => (
+                                <Badge key={role} className={getRoleBadgeColor(role)}>
+                                  {role}
+                                </Badge>
+                              ))}
+                              {identity.isAdmin && (
+                                <Badge className="bg-red-100 text-red-800">
+                                  Admin
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex flex-wrap gap-2">
-                            {identity.roles && identity.roles.map((role: string) => (
-                              <Badge key={role} className={getRoleBadgeColor(role)}>
-                                {role}
-                              </Badge>
-                            ))}
-                            {identity.isAdmin && (
-                              <Badge className="bg-red-100 text-red-800">
-                                Admin
-                              </Badge>
+                          <div className="flex space-x-2">
+                            {!identity.isAdmin && identityId && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleMakeAdmin(identityId)}
+                              >
+                                <Shield className="h-4 w-4 mr-2" />
+                                Make Admin
+                              </Button>
                             )}
                           </div>
                         </div>
-                        <div className="flex space-x-2">
-                          {!identity.isAdmin && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleMakeAdmin(identity.alias || identity.enrollmentID)}
-                            >
-                              <Shield className="h-4 w-4 mr-2" />
-                              Make Admin
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
