@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -10,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { apiClient } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Package } from 'lucide-react';
+import { ArrowLeft, Package, TestTubeDiagonal } from 'lucide-react'; // Added TestTubeDiagonal for demo button
 
 const CreateShipment = () => {
   const navigate = useNavigate();
@@ -20,13 +19,13 @@ const CreateShipment = () => {
     shipmentId: '',
     productName: '',
     description: '',
-    quantity: '',
+    quantity: '', // Keep as string for form input
     unitOfMeasure: 'kg',
     farmerName: '',
     farmLocation: '',
     cropType: '',
-    plantingDate: '',
-    harvestDate: '',
+    plantingDate: '', // Store as YYYY-MM-DD string from date picker
+    harvestDate: '',   // Store as YYYY-MM-DD string from date picker
     fertilizerUsed: '',
     farmingPractice: 'Conventional',
     destinationProcessorId: '',
@@ -44,33 +43,105 @@ const CreateShipment = () => {
     return `${prefix}-${timestamp}-${random}`;
   };
 
+  const fillWithDemoData = () => {
+    // Get current date for sensible default planting/harvest dates
+    const today = new Date();
+    const planting = new Date(today);
+    planting.setDate(today.getDate() - 90); // Approx 3 months ago
+    const harvest = new Date(today);
+    harvest.setDate(today.getDate() - 7); // Approx 1 week ago
+
+    const formatDateForInput = (date: Date) => {
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    setFormData({
+      shipmentId: '', // Let it be auto-generated for demo
+      productName: 'Premium Organic Test Apples',
+      description: 'Freshly harvested, ethically sourced organic apples for demonstration purposes. Grown with care.',
+      quantity: '125.5', // String, as it comes from input
+      unitOfMeasure: 'kg',
+      farmerName: 'Demo Apple Farms Co.',
+      farmLocation: 'Green Valley, CA, USA',
+      cropType: 'Apples (Fuji)',
+      plantingDate: formatDateForInput(planting),
+      harvestDate: formatDateForInput(harvest),
+      fertilizerUsed: 'Organic Compost Blend, Worm Castings',
+      farmingPractice: 'Organic',
+      destinationProcessorId: 'PROCESSOR_MAIN_HUB_01',
+      certificationDocumentHash: 'demoDocHash_abc123xyz789_organicApples'
+    });
+    toast({
+        title: "Demo Data Loaded",
+        description: "The form has been filled with sample shipment information.",
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    // --- FORM VALIDATION ---
+    if (!formData.productName.trim()) {
+      toast({ title: "Validation Error", description: "Product Name is required.", variant: "destructive" });
+      setLoading(false); return;
+    }
+    if (!formData.farmerName.trim()) {
+      toast({ title: "Validation Error", description: "Farmer/Farm Name is required.", variant: "destructive" });
+      setLoading(false); return;
+    }
+    if (!formData.farmLocation.trim()) {
+      toast({ title: "Validation Error", description: "Farm Location is required.", variant: "destructive" });
+      setLoading(false); return;
+    }
+
+    const quantityValue = parseFloat(formData.quantity);
+    if (isNaN(quantityValue) || quantityValue <= 0) {
+      toast({ title: "Invalid Quantity", description: "Quantity must be a valid positive number.", variant: "destructive" });
+      setLoading(false); return;
+    }
+    // --- END OF FORM VALIDATION ---
+
     try {
-      const shipmentId = formData.shipmentId || generateShipmentId();
+      const shipmentId = formData.shipmentId.trim() || generateShipmentId();
       
+      // Robust date handling:
+      // If formData.plantingDate is an empty string or only whitespace, plantingDateISO will be an empty string.
+      // Otherwise, it will be an ISO string.
+      const plantingDateISO = formData.plantingDate.trim() 
+        ? new Date(formData.plantingDate).toISOString() 
+        : "";
+      const harvestDateISO = formData.harvestDate.trim()
+        ? new Date(formData.harvestDate).toISOString()
+        : "";
+
       const farmerData = {
-        farmerName: formData.farmerName,
-        farmLocation: formData.farmLocation,
-        cropType: formData.cropType,
-        plantingDate: formData.plantingDate ? new Date(formData.plantingDate).toISOString() : '',
-        harvestDate: formData.harvestDate ? new Date(formData.harvestDate).toISOString() : '',
-        fertilizerUsed: formData.fertilizerUsed,
+        farmerName: formData.farmerName.trim(),
+        farmLocation: formData.farmLocation.trim(),
+        cropType: formData.cropType.trim(),
+        plantingDate: plantingDateISO,
+        harvestDate: harvestDateISO,
+        fertilizerUsed: formData.fertilizerUsed.trim(),
         farmingPractice: formData.farmingPractice,
-        destinationProcessorId: formData.destinationProcessorId,
-        certificationDocumentHash: formData.certificationDocumentHash
+        destinationProcessorId: formData.destinationProcessorId.trim(),
+        certificationDocumentHash: formData.certificationDocumentHash.trim()
       };
 
-      await apiClient.createShipment({
+      const shipmentPayload = {
         shipmentId,
-        productName: formData.productName,
-        description: formData.description,
-        quantity: parseFloat(formData.quantity),
+        productName: formData.productName.trim(),
+        description: formData.description.trim(),
+        quantity: quantityValue,
         unitOfMeasure: formData.unitOfMeasure,
-        farmerData
-      });
+        farmerData 
+      };
+
+      console.log("Frontend: Sending shipment creation payload:", JSON.stringify(shipmentPayload, null, 2));
+
+      await apiClient.createShipment(shipmentPayload);
 
       toast({
         title: "Shipment created successfully",
@@ -79,6 +150,7 @@ const CreateShipment = () => {
 
       navigate('/dashboard');
     } catch (error) {
+      console.error("Frontend: Error creating shipment:", error);
       toast({
         title: "Error creating shipment",
         description: error instanceof Error ? error.message : "Failed to create shipment",
@@ -93,16 +165,23 @@ const CreateShipment = () => {
     <Layout>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" onClick={() => navigate('/dashboard')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-          <div className="flex items-center space-x-2">
-            <Package className="h-6 w-6 text-emerald-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Create New Shipment</h1>
-          </div>
+        <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+                <Button variant="outline" onClick={() => navigate('/dashboard')}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Dashboard
+                </Button>
+                <div className="flex items-center space-x-2">
+                    <Package className="h-6 w-6 text-emerald-600" />
+                    <h1 className="text-2xl font-bold text-gray-900">Create New Shipment</h1>
+                </div>
+            </div>
+            <Button variant="outline" onClick={fillWithDemoData} className="text-sm">
+                <TestTubeDiagonal className="h-4 w-4 mr-2" />
+                Fill with Demo Data
+            </Button>
         </div>
+
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
@@ -130,7 +209,6 @@ const CreateShipment = () => {
                     id="productName"
                     value={formData.productName}
                     onChange={(e) => handleInputChange('productName', e.target.value)}
-                    required
                     placeholder="e.g., Organic Tomatoes"
                   />
                 </div>
@@ -156,7 +234,6 @@ const CreateShipment = () => {
                     step="0.01"
                     value={formData.quantity}
                     onChange={(e) => handleInputChange('quantity', e.target.value)}
-                    required
                     placeholder="0.00"
                   />
                 </div>
@@ -196,7 +273,6 @@ const CreateShipment = () => {
                     id="farmerName"
                     value={formData.farmerName}
                     onChange={(e) => handleInputChange('farmerName', e.target.value)}
-                    required
                     placeholder="Farm name or farmer name"
                   />
                 </div>
@@ -206,7 +282,6 @@ const CreateShipment = () => {
                     id="farmLocation"
                     value={formData.farmLocation}
                     onChange={(e) => handleInputChange('farmLocation', e.target.value)}
-                    required
                     placeholder="City, State/Province, Country"
                   />
                 </div>
@@ -244,7 +319,7 @@ const CreateShipment = () => {
                   <Input
                     id="plantingDate"
                     type="date"
-                    value={formData.plantingDate}
+                    value={formData.plantingDate} // Expects YYYY-MM-DD
                     onChange={(e) => handleInputChange('plantingDate', e.target.value)}
                   />
                 </div>
@@ -253,7 +328,7 @@ const CreateShipment = () => {
                   <Input
                     id="harvestDate"
                     type="date"
-                    value={formData.harvestDate}
+                    value={formData.harvestDate} // Expects YYYY-MM-DD
                     onChange={(e) => handleInputChange('harvestDate', e.target.value)}
                   />
                 </div>
