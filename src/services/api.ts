@@ -1,7 +1,7 @@
-
 import { useAuth } from '@/contexts/AuthContext';
 
-const API_BASE_URL = '';
+// Update this to point to your local backend server
+const API_BASE_URL = 'http://localhost:3001';
 
 interface ApiResponse<T> {
   data?: T;
