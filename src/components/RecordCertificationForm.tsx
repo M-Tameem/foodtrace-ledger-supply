@@ -25,6 +25,7 @@ const RecordCertificationForm: React.FC<RecordCertificationFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     inspectionDate: '',
+    inspectionReportHash: '',
     certificationStatus: '',
     comments: ''
   });
@@ -88,6 +89,16 @@ const RecordCertificationForm: React.FC<RecordCertificationFormProps> = ({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="inspectionReportHash">Inspection Report Hash (Optional)</Label>
+            <Input
+              id="inspectionReportHash"
+              value={formData.inspectionReportHash}
+              onChange={(e) => setFormData(prev => ({ ...prev, inspectionReportHash: e.target.value }))}
+              placeholder="Enter hash of inspection report document"
+            />
           </div>
 
           <div>

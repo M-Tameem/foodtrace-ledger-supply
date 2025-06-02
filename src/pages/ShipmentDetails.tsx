@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -40,7 +41,7 @@ const ShipmentDetails = () => {
   const [showCertificationForm, setShowCertificationForm] = useState(false);
 
   useEffect(() => {
-    if (id && id !== 'undefined') {
+    if (id && id !== 'undefined' && id !== 'null') {
       loadShipmentDetails();
     } else {
       setLoading(false);
@@ -53,7 +54,7 @@ const ShipmentDetails = () => {
   }, [id]);
 
   const loadShipmentDetails = async () => {
-    if (!id || id === 'undefined') {
+    if (!id || id === 'undefined' || id === 'null') {
       setLoading(false);
       return;
     }
@@ -185,7 +186,7 @@ const ShipmentDetails = () => {
     );
   }
 
-  if (!id || id === 'undefined' || !shipment) {
+  if (!id || id === 'undefined' || id === 'null' || !shipment) {
     return (
       <Layout>
         <div className="text-center py-12">
@@ -582,6 +583,12 @@ const ShipmentDetails = () => {
                       <div className="mt-3">
                         <label className="text-sm font-medium text-gray-500">Comments</label>
                         <p className="text-gray-900">{cert.comments}</p>
+                      </div>
+                    )}
+                    {cert.inspectionReportHash && (
+                      <div className="mt-3">
+                        <label className="text-sm font-medium text-gray-500">Report Hash</label>
+                        <p className="text-gray-900 font-mono text-sm">{cert.inspectionReportHash}</p>
                       </div>
                     )}
                   </div>

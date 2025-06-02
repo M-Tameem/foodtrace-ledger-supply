@@ -57,9 +57,13 @@ class ApiClient {
     return this.request<any>(`/api/shipments/my?pageSize=${pageSize}&bookmark=${bookmark}`);
   }
 
+  async getShipmentsByStatus(status: string, pageSize = 10, bookmark = '') {
+    return this.request<any>(`/api/shipments/status/${status}?pageSize=${pageSize}&bookmark=${bookmark}`);
+  }
+
   async getShipmentDetails(id: string) {
     console.log('Getting shipment details for ID:', id);
-    if (!id || id === 'undefined') {
+    if (!id || id === 'undefined' || id === 'null') {
       throw new Error('Invalid shipment ID');
     }
     return this.request<any>(`/api/shipments/${encodeURIComponent(id)}`);
@@ -79,9 +83,17 @@ class ApiClient {
   }
 
   async recordCertification(shipmentId: string, data: any) {
+    // Backend expects: inspectionDate, inspectionReportHash, certificationStatus, comments
+    const payload = {
+      inspectionDate: data.inspectionDate,
+      inspectionReportHash: data.inspectionReportHash || '', // Optional field
+      certificationStatus: data.certificationStatus,
+      comments: data.comments || ''
+    };
+    
     return this.request<any>(`/api/shipments/${encodeURIComponent(shipmentId)}/certification/record`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
   }
 
@@ -106,9 +118,21 @@ class ApiClient {
     });
   }
 
+  // Transform products (processor only)
+  async transformProducts(inputConsumption: any, newProductsData: any, processorData: any) {
+    return this.request<any>('/api/shipments/transform', {
+      method: 'POST',
+      body: JSON.stringify({ inputConsumption, newProductsData, processorData }),
+    });
+  }
+
   // Admin
   async getAllIdentities() {
     return this.request<any>('/api/identities');
+  }
+
+  async getIdentityDetails(alias: string) {
+    return this.request<any>(`/api/identities/${encodeURIComponent(alias)}`);
   }
 
   async registerUser(userData: any) {
@@ -125,8 +149,34 @@ class ApiClient {
     });
   }
 
+  async removeRole(alias: string, role: string) {
+    return this.request<any>(`/api/identities/${encodeURIComponent(alias)}/roles/${encodeURIComponent(role)}`, {
+      method: 'DELETE',
+    });
+  }
+
   async makeAdmin(alias: string) {
     return this.request<any>(`/api/identities/${encodeURIComponent(alias)}/admin`, {
+      method: 'POST',
+    });
+  }
+
+  async removeAdmin(alias: string) {
+    return this.request<any>(`/api/identities/${encodeURIComponent(alias)}/admin`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Archive/Unarchive (Admin only)
+  async archiveShipment(shipmentId: string, reason: string) {
+    return this.request<any>(`/api/shipments/${encodeURIComponent(shipmentId)}/archive`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  async unarchiveShipment(shipmentId: string) {
+    return this.request<any>(`/api/shipments/${encodeURIComponent(shipmentId)}/unarchive`, {
       method: 'POST',
     });
   }
@@ -137,6 +187,39 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ shipmentId, recallId, reason }),
     });
+  }
+
+  async addLinkedShipmentsToRecall(recallId: string, primaryShipmentId: string, linkedShipmentIds: string[]) {
+    return this.request<any>(`/api/recalls/${encodeURIComponent(recallId)}/linked-shipments`, {
+      method: 'POST',
+      body: JSON.stringify({ primaryShipmentId, linkedShipmentIds }),
+    });
+  }
+
+  async getRelatedShipments(shipmentId: string, timeWindowHours = 24) {
+    return this.request<any>(`/api/recalls/${encodeURIComponent(shipmentId)}/related?timeWindowHours=${timeWindowHours}`);
+  }
+
+  // Utility
+  async getCurrentUserInfo() {
+    return this.request<any>('/api/users/current/info');
+  }
+
+  async checkAdminStatus(alias: string) {
+    return this.request<any>(`/api/users/${encodeURIComponent(alias)}/admin/status`);
+  }
+
+  async getFullIdForAlias(alias: string) {
+    return this.request<any>(`/api/utils/fullid/${encodeURIComponent(alias)}`);
+  }
+
+  // System
+  async getBootstrapStatus() {
+    return this.request<any>('/api/system/bootstrap-status');
+  }
+
+  async getCallerIdentity() {
+    return this.request<any>('/api/debug/caller-identity');
   }
 }
 

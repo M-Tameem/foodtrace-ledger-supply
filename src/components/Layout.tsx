@@ -12,7 +12,8 @@ import {
   TruckIcon,
   ShieldCheck,
   Building,
-  Leaf
+  Leaf,
+  List
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -43,6 +44,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const getNavItems = () => {
     const baseItems = [
       { path: '/dashboard', label: 'Dashboard', icon: <Package className="h-4 w-4" /> },
+      { path: '/shipments/all', label: 'All Shipments', icon: <List className="h-4 w-4" /> },
       { path: '/track', label: 'Track Shipment', icon: <Search className="h-4 w-4" /> },
     ];
 
