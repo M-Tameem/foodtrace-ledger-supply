@@ -100,12 +100,40 @@ const Dashboard = () => {
       } else if (user?.role === 'certifier') {
         const pendingCertResponse = await apiClient.getShipmentsByStatus('PENDING_CERTIFICATION', pageSize);
         relevantShipments = pendingCertResponse.shipments || [];
+      // In Dashboard.tsx, around line 85, change the distributor logic:
+
       } else if (user?.role === 'distributor') {
-        const processedShipmentsResponse = await apiClient.getShipmentsByStatus('PROCESSED', pageSize);
-        relevantShipments = processedShipmentsResponse.shipments || [];
+        if (currentUserFullId) {
+          const allShipmentsResponse = await apiClient.getAllShipments(pageSize); 
+          const allShipments = allShipmentsResponse.shipments || [];
+          relevantShipments = allShipments.filter((s: any) =>
+            (s.status === 'PROCESSED') &&
+            s.processorData?.destinationDistributorId === currentUserFullId  // Fixed: changed from farmerData.destinationProcessorId
+          );
+        } else {
+          relevantShipments = [];
+          toast({ 
+            title: "Distributor Data Unavailable", 
+            description: "Cannot filter shipments for distributor without their Full ID.", 
+            variant: "destructive" 
+          });
+        }
       } else if (user?.role === 'retailer') {
-        const distributedShipmentsResponse = await apiClient.getShipmentsByStatus('DISTRIBUTED', pageSize);
-        relevantShipments = distributedShipmentsResponse.shipments || [];
+        if (currentUserFullId) {
+          const allShipmentsResponse = await apiClient.getAllShipments(pageSize);
+          const allShipments = allShipmentsResponse.shipments || [];
+          relevantShipments = allShipments.filter((s: any) =>
+            (s.status === 'DISTRIBUTED') &&
+            s.distributorData?.destinationRetailerId === currentUserFullId
+          );
+        } else {
+          relevantShipments = [];
+          toast({ 
+            title: "Retailer Data Unavailable", 
+            description: "Cannot filter shipments for retailer without their Full ID.", 
+            variant: "destructive" 
+          });
+        }
       } else if (user?.is_admin) { // For admin role
         const allShipmentsResponse = await apiClient.getAllShipments(pageSize);
         relevantShipments = allShipmentsResponse.shipments || [];
